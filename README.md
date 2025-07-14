@@ -4,7 +4,7 @@
 
 ## 🎥 הדגמה סרטון וידאו
 
-(https://vimeo.com/1101227133?share=copy)
+[לחץ כאן לצפייה בסרטון 🎬](https://vimeo.com/1101227133?share=copy)
 
 
 *הדגמת המערכת בפעולה - העלאת תלוש שכר וקבלת תוצאות מסווגות*
