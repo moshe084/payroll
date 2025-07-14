@@ -2,11 +2,10 @@
 
 מערכת לעיבוד תלושי שכר ישראליים באמצעות בינה מלאכותית של Claude.
 
-## 🎥 הדגמה
+## 🎥 הדגמה סרטון וידאו
 
-[![Demo Video](https://img.shields.io/badge/🎬_צפה_בהדגמה-Video_Demo-blue?style=for-the-badge)](./Video_demo.mp4)
+(https://vimeo.com/1101227133?share=copy)
 
-### [📹 לחץ כאן לצפייה בסרטון ההדגמה](./Video_demo.mp4)
 
 *הדגמת המערכת בפעולה - העלאת תלוש שכר וקבלת תוצאות מסווגות*
 
