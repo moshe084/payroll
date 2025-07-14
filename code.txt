@@ -1,0 +1,700 @@
+import React, { useState } from 'react';
+import { Upload, FileText, Brain, CheckCircle, Camera, Loader, AlertCircle } from 'lucide-react';
+
+// שירות OpenAI (בפרויקט אמיתי יהיה בקובץ נפרד)
+const processPayslipWithOpenAI = async (imageFile, customApiKey) => {
+  // נסה קודם עם הטוקן שהועבר, אחר כך עם משתנה הסביבה
+  const openaiApiKey = customApiKey || process.env.REACT_APP_OPENAI_API_KEY;
+  
+  if (!openaiApiKey) {
+    throw new Error('נדרש API Token של OpenAI. הכנס טוקן או הגדר משתנה סביבה.');
+  }
+
+  // ולידציה בסיסית של הטוקן
+  if (!openaiApiKey.startsWith('sk-')) {
+    throw new Error('פורמט טוקן לא תקין. טוקן צריך להתחיל ב-sk-');
+  }
+
+  if (openaiApiKey.length < 40) {
+    throw new Error('טוקן קצר מדי. וודא שהעתקת את הטוקן המלא.');
+  }
+
+  // המרה ל-Base64
+  const convertToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const base64 = reader.result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  try {
+    const base64Image = await convertToBase64(imageFile);
+    
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openaiApiKey}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4-vision-preview",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `אתה מומחה לניתוח תלושי שכר בישראל. נתח את התלוש בצורה מדויקת וחלק את ההכנסות ל-4 קטגוריות בלבד.
+
+🔍 הנחיות חיוניות - קרא בזהירות:
+
+קטגוריה 1: "רגיל" - כלול רק:
+- שכר בסיס / משכורת בסיסית
+- תוספת ותק
+- תוספת השכלה / תואר
+- תוספת משפחה
+- תוספת יוקר מחיה
+- תוספת מקום עבודה
+- תוספת קבועה כלשהי
+
+קטגוריה 2: "שעות נוספות" - כלול רק:
+- שעות נוספות 125%
+- שעות נוספות 150% 
+- שעות נוספות 175%
+- שעות נוספות 200%
+- תוספת לילה
+- תוספת שבת/חג
+- כל תשלום עם אחוז מעל 100%
+
+קטגוריה 3: "נסיעות" - כלול רק:
+- קילומטראז' / דמי נסיעה
+- החזר הוצאות נסיעה
+- דמי דלק
+- תחבורה ציבורית
+- כל דבר שקשור לנסיעות
+
+קטגוריה 4: "אחר" - כלול את כל השאר:
+- מענקים וברמים
+- תשלומים חד פעמיים
+- פיצויים
+- החזרי הוצאות (לא נסיעות)
+- כל דבר שלא מתאים ל-3 הקטגוריות הקודמות
+
+⚠️ חוקי זהב:
+1. קרא כל שורה בתלוש בזהירות
+2. זהה מספרים עבריים וערביים כאחד
+3. התעלם מניכויים - רק הכנסות!
+4. אם לא בטוח איפה לשים פריט - שים ב"אחר"
+5. סכום את כל הפריטים בכל קטגוריה
+6. בדוק שהסכומים נכונים
+
+💰 חילוץ מספרים:
+- זהה מספרים בפורמט ישראלי: 1,234.56 או 1234.56
+- התעלם מתווים (-) בתחילת מספר (אלו ניכויים)
+- המר הכל לשקלים
+- אם יש נקודות או פסיקים - פענח נכון
+
+השב בפורמט JSON זה בדיוק - אל תוסיף טקסט נוסף:
+{
+  "categories": {
+    "regular": {
+      "total": [סכום מספרי בלבד],
+      "items": [
+        {"description": "תיאור מדויק מהתלוש", "amount": מספר}
+      ]
+    },
+    "overtime": {
+      "total": [סכום מספרי בלבד],
+      "items": [
+        {"description": "תיאור מדויק מהתלוש", "amount": מספר, "rate": "125%"}
+      ]
+    },
+    "travel": {
+      "total": [סכום מספרי בלבד],
+      "items": [
+        {"description": "תיאור מדויק מהתלוש", "amount": מספר}
+      ]
+    },
+    "other": {
+      "total": [סכום מספרי בלבד],
+      "items": [
+        {"description": "תיאור מדויק מהתלוש", "amount": מספר}
+      ]
+    }
+  },
+  "summary": {
+    "totalIncome": [סכום כל ההכנסות],
+    "netSalary": [שכר נטו לתשלום]
+  },
+  "employeeInfo": {
+    "name": "שם העובד אם נמצא",
+    "month": "חודש השכר אם נמצא"
+  }
+}
+
+בצע את המשימה בזהירות קיצונית - זה נתון פיננסי רגיש!`
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Image}`,
+                  detail: "high"
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 2000,
+        temperature: 0.1
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`OpenAI API Error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+    }
+
+    const data = await response.json();
+    const jsonResponse = data.choices[0].message.content;
+    
+    // ניקוי תגובה אם יש טקסט נוסף
+    const cleanedResponse = jsonResponse.replace(/```json|```/g, '').trim();
+    
+    return JSON.parse(cleanedResponse);
+  } catch (error) {
+    console.error('שגיאה בעיבוד:', error);
+    
+    if (error.message.includes('rate_limit_exceeded')) {
+      throw new Error('חרגת ממגבלת הבקשות. נסה שוב בעוד כמה דקות.');
+    } else if (error.message.includes('invalid_api_key')) {
+      throw new Error('מפתח API לא תקין. בדוק את ההגדרות.');
+    } else if (error.message.includes('insufficient_quota')) {
+      throw new Error('אין מספיק יתרה בחשבון OpenAI.');
+    } else if (error instanceof SyntaxError) {
+      throw new Error('ChatGPT החזיר תגובה לא תקינה. נסה שוב.');
+    } else {
+      throw new Error(`שגיאה בעיבוד התמונה: ${error.message}`);
+    }
+  }
+};
+
+const PayslipAIDemo = () => {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [file, setFile] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [results, setResults] = useState(null);
+  const [error, setError] = useState(null);
+  const [apiToken, setApiToken] = useState('');
+  const [showTokenInput, setShowTokenInput] = useState(false);
+
+  const steps = [
+    { number: 1, title: "העלאת תלוש", icon: Upload, active: currentStep >= 1 },
+    { number: 2, title: "זיהוי תמונה", icon: Camera, active: currentStep >= 2 },
+    { number: 3, title: "עיבוד AI", icon: Brain, active: currentStep >= 3 },
+    { number: 4, title: "תוצאות", icon: CheckCircle, active: currentStep >= 4 }
+  ];
+
+  const handleFileUpload = (event) => {
+    const selectedFile = event.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setError(null);
+      setCurrentStep(2);
+    }
+  };
+
+  // פונקציית ולידציה לתוצאות
+  const validateResults = (results) => {
+    if (!results.categories) {
+      throw new Error('ChatGPT לא החזיר קטגוריות. נסה שוב.');
+    }
+
+    const requiredCategories = ['regular', 'overtime', 'travel', 'other'];
+    for (const category of requiredCategories) {
+      if (!results.categories[category]) {
+        results.categories[category] = { total: 0, items: [] };
+      }
+    }
+
+    for (const categoryName in results.categories) {
+      const category = results.categories[categoryName];
+      if (typeof category.total !== 'number') {
+        category.total = parseFloat(category.total) || 0;
+      }
+      
+      if (!Array.isArray(category.items)) {
+        category.items = [];
+      }
+      
+      category.items = category.items.filter(item => 
+        item && typeof item === 'object' && item.description
+      );
+    }
+
+    const calculatedTotal = 
+      results.categories.regular.total +
+      results.categories.overtime.total +
+      results.categories.travel.total +
+      results.categories.other.total;
+
+    if (!results.summary) {
+      results.summary = {};
+    }
+    results.summary.totalIncome = calculatedTotal;
+
+    if (calculatedTotal === 0) {
+      results.warning = "לא נמצאו הכנסות בתלוש. ייתכן שהתמונה לא ברורה מספיק.";
+    } else if (results.summary.netSalary && Math.abs(calculatedTotal - results.summary.netSalary) > calculatedTotal * 0.5) {
+      results.warning = "יש פער גדול בין סכום ההכנסות לשכר הנטו. בדוק את התוצאות.";
+    }
+
+    return results;
+  };
+
+  const processWithRealAI = async () => {
+    if (!apiToken && !process.env.REACT_APP_OPENAI_API_KEY) {
+      setError('נדרש API Token. הכנס טוקן בשדה למעלה.');
+      return;
+    }
+
+    setIsProcessing(true);
+    setCurrentStep(3);
+    setError(null);
+    
+    try {
+      const aiResults = await processPayslipWithOpenAI(file, apiToken);
+      const validatedResults = validateResults(aiResults);
+      setResults(validatedResults);
+      setCurrentStep(4);
+    } catch (err) {
+      setError(err.message);
+      setCurrentStep(2);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const resetDemo = () => {
+    setCurrentStep(1);
+    setFile(null);
+    setResults(null);
+    setError(null);
+    setIsProcessing(false);
+  };
+
+  // בדיקת תקינות טוקן
+  const testApiToken = async (tokenToTest) => {
+    try {
+      const response = await fetch('https://api.openai.com/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${tokenToTest}`
+        }
+      });
+      
+      if (response.ok) {
+        return { success: true, message: 'טוקן תקין ופעיל!' };
+      } else if (response.status === 401) {
+        return { success: false, message: 'טוקן לא תקין או פג תוקף' };
+      } else if (response.status === 429) {
+        return { success: false, message: 'חרגת ממגבלת הבקשות' };
+      } else {
+        return { success: false, message: `שגיאה: ${response.status}` };
+      }
+    } catch (error) {
+      return { success: false, message: 'שגיאה בחיבור לשרת OpenAI' };
+    }
+  };
+
+  const getBorderClass = (color) => {
+    switch(color) {
+      case 'blue': return 'border-blue-500 bg-blue-50';
+      case 'green': return 'border-green-500 bg-green-50';
+      case 'yellow': return 'border-yellow-500 bg-yellow-50';
+      case 'purple': return 'border-purple-500 bg-purple-50';
+      default: return 'border-gray-500 bg-gray-50';
+    }
+  };
+
+  const getTextColor = (color) => {
+    switch(color) {
+      case 'blue': return 'text-blue-600';
+      case 'green': return 'text-green-600';
+      case 'yellow': return 'text-yellow-600';
+      case 'purple': return 'text-purple-600';
+      default: return 'text-gray-600';
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100" dir="rtl">
+      <div className="container mx-auto px-4 py-8">
+        {/* כותרת */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">
+            🤖 דמו AI לעיבוד תלושי שכר
+          </h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            העלה תלוש שכר וקבל חלוקה אוטומטית ל-4 קטגוריות: רגיל, שעות נוספות, נסיעות ואחר
+          </p>
+        </div>
+
+        {/* הגדרת API Token */}
+        <div className="max-w-2xl mx-auto mb-8">
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">🔑 הגדרת API Token</h3>
+              <button
+                onClick={() => setShowTokenInput(!showTokenInput)}
+                className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+              >
+                {showTokenInput ? 'הסתר' : (apiToken ? 'ערוך טוקן' : 'הכנס טוקן')}
+              </button>
+            </div>
+            
+            {showTokenInput ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    OpenAI API Token
+                  </label>
+                  <input
+                    type="password"
+                    value={apiToken}
+                    onChange={(e) => setApiToken(e.target.value)}
+                    placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    dir="ltr"
+                  />
+                </div>
+                <div className="flex space-x-3 space-x-reverse">
+                  <button
+                    onClick={() => {
+                      setShowTokenInput(false);
+                      setError(null);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  >
+                    שמור
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (apiToken) {
+                        const result = await testApiToken(apiToken);
+                        if (result.success) {
+                          setError(null);
+                          alert('✅ ' + result.message);
+                        } else {
+                          setError(result.message);
+                        }
+                      }
+                    }}
+                    disabled={!apiToken}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    בדוק טוקן
+                  </button>
+                  <button
+                    onClick={() => {
+                      setApiToken('');
+                      setShowTokenInput(false);
+                    }}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
+                  >
+                    נקה
+                  </button>
+                </div>
+                <div className="text-xs text-gray-500">
+                  <p>💡 <strong>איך לקבל טוקן:</strong></p>
+                  <p>1. היכנס ל-<a href="https://platform.openai.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">platform.openai.com</a></p>
+                  <p>2. לך ל-API Keys ויצור טוקן חדש</p>
+                  <p>3. העתק והדבק כאן</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  {apiToken ? (
+                    <>
+                      <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                      <span className="text-sm text-gray-600">
+                        טוקן מוגדר: ****{apiToken.slice(-8)}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
+                      <span className="text-sm text-gray-600">
+                        לא הוגדר טוקן - יתבצע ניסיון עם משתנה סביבה
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* אינדיקטור שלבים */}
+        <div className="flex justify-center mb-12">
+          <div className="flex items-center space-x-8 space-x-reverse">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              return (
+                <div key={step.number} className="flex items-center">
+                  <div className={`flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 ${
+                    step.active 
+                      ? 'bg-blue-500 text-white shadow-lg' 
+                      : 'bg-gray-200 text-gray-500'
+                  }`}>
+                    <Icon size={20} />
+                  </div>
+                  <div className="mr-3">
+                    <div className={`text-sm font-medium ${
+                      step.active ? 'text-blue-600' : 'text-gray-500'
+                    }`}>
+                      שלב {step.number}
+                    </div>
+                    <div className={`text-xs ${
+                      step.active ? 'text-blue-500' : 'text-gray-400'
+                    }`}>
+                      {step.title}
+                    </div>
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className={`w-8 h-0.5 mx-4 ${
+                      currentStep > step.number ? 'bg-blue-500' : 'bg-gray-300'
+                    }`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* תוכן ראשי */}
+        <div className="max-w-4xl mx-auto">
+          {currentStep === 1 && (
+            <div className="bg-white rounded-xl shadow-lg p-8">
+              <h2 className="text-2xl font-bold text-center mb-6">העלאת תלוש שכר</h2>
+              
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-blue-400 transition-colors">
+                <Upload className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  גרור קובץ לכאן או לחץ לבחירה
+                </h3>
+                <p className="text-gray-500 mb-6">
+                  תומך ב-JPG, PNG, PDF עד 5MB
+                </p>
+                
+                <input
+                  type="file"
+                  id="file-upload"
+                  accept="image/*,.pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="file-upload"
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 cursor-pointer transition-colors"
+                >
+                  <Upload className="mr-2 h-5 w-5" />
+                  בחר קובץ
+                </label>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 2 && (
+            <div className="bg-white rounded-xl shadow-lg p-8">
+              <div className="text-center">
+                <div className="mb-6">
+                  <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
+                  <h2 className="text-2xl font-bold mb-2">קובץ הועלה בהצלחה!</h2>
+                  <p className="text-gray-600">
+                    <strong>{file?.name}</strong> ({file ? (file.size / 1024).toFixed(1) : '0'} KB)
+                  </p>
+                </div>
+                
+                {error && (
+                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-center">
+                      <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                      <span className="text-red-700">{error}</span>
+                    </div>
+                  </div>
+                )}
+                
+                <button
+                  onClick={processWithRealAI}
+                  disabled={isProcessing}
+                  className="inline-flex items-center px-8 py-4 border border-transparent text-lg font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Brain className="mr-3 h-6 w-6" />
+                  {isProcessing ? 'מעבד...' : 'עבד עם ChatGPT'}
+                  {(apiToken || process.env.REACT_APP_OPENAI_API_KEY) && (
+                    <span className="mr-2 w-2 h-2 bg-green-400 rounded-full"></span>
+                  )}
+                </button>
+                
+                {!apiToken && !process.env.REACT_APP_OPENAI_API_KEY && (
+                  <p className="mt-4 text-sm text-yellow-600">
+                    ⚠️ נדרש API Token כדי לעבוד עם ChatGPT
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {currentStep === 3 && (
+            <div className="bg-white rounded-xl shadow-lg p-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-6"></div>
+                <h2 className="text-2xl font-bold mb-4">ChatGPT מנתח את התלוש...</h2>
+                <div className="text-gray-600 space-y-2">
+                  <p>🔍 קורא טקסט בעברית וערבית</p>
+                  <p>📊 מזהה סכומים ותעריפים</p>
+                  <p>🏷️ מסווג לקטגוריות</p>
+                  <p>✅ מוודא דיוק התוצאות</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 4 && results && (
+            <div className="bg-white rounded-xl shadow-lg p-8">
+              <h2 className="text-2xl font-bold text-center mb-8">תוצאות עיבוד ChatGPT</h2>
+              
+              {results.warning && (
+                <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-start">
+                    <AlertCircle className="h-5 w-5 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <span className="text-yellow-800 text-sm">{results.warning}</span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-4 gap-4">
+                {[
+                  { 
+                    title: "רגיל", 
+                    amount: results.categories?.regular?.total || 0, 
+                    color: "blue", 
+                    items: results.categories?.regular?.items || []
+                  },
+                  { 
+                    title: "שעות נוספות", 
+                    amount: results.categories?.overtime?.total || 0, 
+                    color: "green", 
+                    items: results.categories?.overtime?.items || []
+                  },
+                  { 
+                    title: "נסיעות", 
+                    amount: results.categories?.travel?.total || 0, 
+                    color: "yellow", 
+                    items: results.categories?.travel?.items || []
+                  },
+                  { 
+                    title: "אחר", 
+                    amount: results.categories?.other?.total || 0, 
+                    color: "purple", 
+                    items: results.categories?.other?.items || []
+                  }
+                ].map((category) => (
+                  <div key={category.title} className={`border-r-4 ${getBorderClass(category.color)} p-4 rounded-lg text-right`}>
+                    <h3 className="text-base font-bold mb-2 text-gray-800">{category.title}</h3>
+                    <div className={`text-lg font-bold mb-3 ${getTextColor(category.color)}`}>
+                      ₪{typeof category.amount === 'number' ? category.amount.toLocaleString() : category.amount}
+                    </div>
+                    <div className="space-y-1">
+                      {category.items.slice(0, 3).map((item, index) => (
+                        <div key={index} className="text-xs text-gray-600">
+                          • {item.description || item}
+                        </div>
+                      ))}
+                      {category.items.length > 3 && (
+                        <div className="text-xs text-gray-500">
+                          ועוד {category.items.length - 3} פריטים...
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {results.summary && (
+                <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                  <h3 className="text-lg font-bold text-center mb-4">סיכום כללי</h3>
+                  <div className="grid grid-cols-2 gap-4 text-center">
+                    <div>
+                      <div className="text-sm text-gray-600">סה"כ הכנסות</div>
+                      <div className="text-xl font-bold text-blue-600">
+                        ₪{typeof results.summary.totalIncome === 'number' ? results.summary.totalIncome.toLocaleString() : (results.summary.totalIncome || '0')}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600">שכר נטו</div>
+                      <div className="text-xl font-bold text-green-600">
+                        ₪{typeof results.summary.netSalary === 'number' ? results.summary.netSalary.toLocaleString() : (results.summary.netSalary || '0')}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {results.employeeInfo && (results.employeeInfo.name || results.employeeInfo.month) && (
+                    <div className="mt-4 pt-4 border-t border-blue-200 text-center text-sm text-gray-600">
+                      {results.employeeInfo.name && <div>עובד: {results.employeeInfo.name}</div>}
+                      {results.employeeInfo.month && <div>תקופה: {results.employeeInfo.month}</div>}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="mt-8 text-center space-x-4 space-x-reverse">
+                <button
+                  onClick={resetDemo}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  תלוש חדש
+                </button>
+                <button
+                  onClick={() => setCurrentStep(2)}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  עבד שוב
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* הודעת סטטוס */}
+        <div className="mt-12 text-center space-y-4">
+          <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm">
+            <Brain className="h-4 w-4 mr-2" />
+            <span>מחובר ל-ChatGPT Vision API עם הנחיות מפורטות</span>
+          </div>
+          
+          <div className="text-xs text-gray-500 max-w-2xl mx-auto">
+            <div className="font-medium mb-2">המערכת מנתחת:</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+              <div>✓ שכר בסיס ותוספות</div>
+              <div>✓ שעות נוספות 125%-200%</div>
+              <div>✓ נסיעות וקילומטראז'</div>
+              <div>✓ מענקים ותשלומים נוספים</div>
+            </div>
+            <div className="mt-3 text-xs text-blue-600">
+              💡 ניתן להכניס API Token ידנית או להגדיר משתנה סביבה REACT_APP_OPENAI_API_KEY
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default PayslipAIDemo;
