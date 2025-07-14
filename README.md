@@ -2,8 +2,19 @@
 
 מערכת לעיבוד תלושי שכר ישראליים באמצעות בינה מלאכותית של Claude.
 
-## 🎥 הדגמה
+## 🎥 הדגמות
 
+### 🚀 **הדגמה אינטראקטיבית - FLOW מלא**
+[![Interactive Demo](https://img.shields.io/badge/🔄_הדגמה_אינטראקטיבית-Process_Flow-purple?style=for-the-badge)](./process_flow_demo.html)
+
+**🎯 חוויה ויזואלית מלאה:**
+- ⚡ Flow מלא ב-4 שלבים עם אנימציות
+- 🧠 מראה איך Claude AI עובד בפועל  
+- 📊 תוצאות בזמן אמת עם נתונים אמיתיים
+- 🎨 עיצוב מתקדם ואינטראקטיבי
+- 💻 מושלם להצגות ולהבנת הקונספט
+
+### 📹 **סרטון הדגמה**
 [![Demo Video](https://img.shields.io/badge/🎬_צפה_בהדגמה-Video_Demo-blue?style=for-the-badge)](./Video_demo.mp4)
 
 ### [📹 לחץ כאן לצפייה בסרטון ההדגמה](./Video_demo.mp4)
@@ -16,7 +27,7 @@
 - 🏷️ סיווג פריטים לקטגוריות: רגיל, שעות נוספות, נסיעות, אחר
 - 📊 הצגת תוצאות מפורטות וסיכום כספי
 
-> 💡 **טיפ**: הסרטון מציג את התהליך המלא מההעלאה ועד לתוצאות הסופיות המסווגות
+> 💡 **טיפ**: ההדגמה האינטראקטיבית מציגה את התהליך המלא בצורה ויזואלית ומרשימה
 
 ## תכונות
 
@@ -171,49 +182,69 @@ npm start
 
 ## API Key
 
-### שיטות הגדרת API Key:
+### ✅ API Key כבר מוגדר!
 
-1. **קובץ סביבה** (מומלץ):
+המפתח כבר מוגדר בקובץ `server/.env` ומוכן לשימוש.
+
+### אופציות נוספות להגדרת API Key:
+
+1. **קובץ סביבה** (כבר מוגדר):
    ```bash
-   # צור קובץ server/.env
-   CLAUDE_API_KEY=your_api_key_here
+   # קובץ server/.env כבר מכיל:
+   CLAUDE_API_KEY=sk-ant-api03-...
    ```
 
-2. **דרך הממשק**: הכנס API key ידנית בממשק האתר
+2. **דרך הממשק**: אפשר להכניס API key ידנית בממשק האתר
 
 3. **משתנה סביבה**:
    ```bash
    export CLAUDE_API_KEY=your_api_key_here
    ```
 
-**הערה**: קובץ `.env` מוגן ב-`.gitignore` למניעת חשיפת המפתח.
+**⚠️ הערה חשובה**: 
+- ה-API key מוגדר ומוכן לשימוש
+- קובץ `.env` מוגן ב-`.gitignore` (לא יועלה ל-GitHub)
+- המפתח פעיל ונבדק
 
 ## מבנה הפרויקט
 
 ```
 payroll/
-├── src/                          # Frontend React
-│   ├── App.js                   # אפליקציה ראשית
-│   ├── PayrollProcessor.js      # רכיב עיבוד תלושים
-│   ├── App.css                  # עיצוב
-│   └── index.js                 # נקודת כניסה
-├── server/                       # Backend Express
-│   ├── server.js                # שרת API
-│   ├── package.json             # תלויות שרת
-│   └── .env                     # הגדרות סביבה
-├── public/                       # קבצים סטטיים
-│   └── index.html              # HTML בסיסי
-├── package.json                 # תלויות frontend
-├── start.sh                     # סקריפט הפעלה
-├── test_upload.js              # בדיקת API
-├── salary.pdf                  # קובץ דוגמה
-└── README.md                   # מסמך זה
+├── src/                              # Frontend React
+│   ├── App.js                       # אפליקציה ראשית
+│   ├── PayrollProcessor.js          # רכיב עיבוד תלושים
+│   ├── App.css                      # עיצוב
+│   └── index.js                     # נקודת כניסה
+├── server/                           # Backend Express
+│   ├── server.js                    # שרת API
+│   ├── package.json                 # תלויות שרת
+│   └── .env                         # הגדרות סביבה
+├── public/                           # קבצים סטטיים
+│   └── index.html                  # HTML בסיסי
+├── 🎥 הדגמות ומדריכים/              # קבצי הדגמה
+│   ├── process_flow_demo.html      # הדגמה אינטראקטיבית
+│   ├── windows_setup_guide.html    # מדריך Windows מתקדם
+│   ├── interactive_cmd_demo.html   # הדגמת CMD אינטראקטיבית
+│   └── Video_demo.mp4              # סרטון הדגמה
+├── 📚 תיעוד מתקדם/                  # מסמכי פיתוח
+│   ├── BUILD_DEMONSTRATION.md      # תהליך הבנייה
+│   ├── DEVELOPMENT_STEPS.md        # שלבי פיתוח
+│   ├── PRESENTATION_SLIDES.md      # מצגת מקצועית
+│   └── TECHNICAL_DEMO.js           # הדגמה טכנית
+├── package.json                     # תלויות frontend
+├── setup_windows.bat               # התקנה אוטומטית Windows
+├── start.sh                         # סקריפט הפעלה Linux/Mac
+├── test_upload.js                  # בדיקת API
+├── salary.pdf                      # קובץ דוגמה
+└── README.md                       # מסמך זה
 ```
 
 ## קבצים חשובים
 - `server/server.js` - מכיל את כל לוגיקת השרת וההוראות ל-Claude
 - `src/PayrollProcessor.js` - הרכיב הראשי של הממשק
-- `api_ocr_instructions.txt` - הנחיות OCR מפורטות לפיתוח
+- `process_flow_demo.html` - **הדגמה אינטראקטיבית מרשימה!**
+- `windows_setup_guide.html` - מדריך Windows מתקדם
+- `setup_windows.bat` - התקנה אוטומטית ל-Windows
 - `salary.pdf` - קובץ דוגמה לבדיקות
 
 ## טכנולוגיות

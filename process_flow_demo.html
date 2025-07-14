@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔄 Flow Demo - מעבד תלושי שכר AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+        
+        .flow-step {
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateX(50px);
+            opacity: 0;
+        }
+        
+        .flow-step.active {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        
+        .flow-step.completed {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #065f46, #047857);
+        }
+        
+        .flow-step.processing {
+            border-color: #3b82f6;
+            background: linear-gradient(135deg, #1e40af, #2563eb);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+            50% { transform: scale(1.02); box-shadow: 0 0 30px rgba(59, 130, 246, 0.6); }
+        }
+        
+        .progress-line {
+            background: linear-gradient(90deg, #e5e7eb, #e5e7eb);
+            height: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-line.active::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #06b6d4, #10b981);
+            animation: progressFlow 2s ease-in-out;
+            width: 100%;
+        }
+        
+        @keyframes progressFlow {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+        
+        .file-upload-animation {
+            animation: fileUpload 3s ease-in-out;
+        }
+        
+        @keyframes fileUpload {
+            0% { transform: translateY(100px) scale(0.8); opacity: 0; }
+            50% { transform: translateY(-10px) scale(1.1); opacity: 0.8; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        
+        .ai-thinking {
+            animation: thinking 2s ease-in-out infinite;
+        }
+        
+        @keyframes thinking {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(5deg) scale(1.05); }
+            50% { transform: rotate(0deg) scale(1.1); }
+            75% { transform: rotate(-5deg) scale(1.05); }
+        }
+        
+        .data-flow {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .data-flow::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff88, transparent);
+            animation: dataTransfer 3s ease-in-out;
+        }
+        
+        .data-flow.active::after {
+            animation: dataTransfer 3s ease-in-out infinite;
+        }
+        
+        @keyframes dataTransfer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .result-card {
+            transform: translateY(30px);
+            opacity: 0;
+            transition: all 0.8s ease-out;
+        }
+        
+        .result-card.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .floating-icon {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+        
+        .text-glow {
+            text-shadow: 0 0 10px currentColor;
+        }
+        
+        .hero-bg {
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
+        }
+        
+        .step-counter {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .category-box {
+            transition: all 0.3s ease;
+            transform: scale(0.9);
+            opacity: 0.7;
+        }
+        
+        .category-box.highlight {
+            transform: scale(1);
+            opacity: 1;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .typing-effect {
+            border-right: 2px solid #00ff88;
+            animation: typing 3s steps(40) 1s both, blink 1s step-end infinite;
+        }
+        
+        @keyframes typing {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+        
+        @keyframes blink {
+            from, to { border-color: transparent; }
+            50% { border-color: #00ff88; }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Hero Section -->
+    <header class="hero-bg py-20 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-gray-900/80"></div>
+        <div class="container mx-auto px-6 text-center relative z-10">
+            <div class="floating-icon text-8xl mb-8">🤖</div>
+            <h1 class="text-6xl font-bold mb-6 text-glow">
+                <span class="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                    Flow התהליך האינטראקטיבי
+                </span>
+            </h1>
+            <p class="text-2xl mb-12 opacity-90">מעבד תלושי שכר עם Claude AI - הדגמה ויזואלית מלאה</p>
+            
+            <button onclick="startDemo()" id="startBtn" 
+                    class="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 
+                           px-12 py-4 rounded-full text-xl font-bold transform hover:scale-105 transition-all 
+                           shadow-2xl hover:shadow-3xl">
+                🚀 התחל הדגמה אינטראקטיבית
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Flow Container -->
+    <div class="container mx-auto px-6 py-16">
+        
+        <!-- Progress Overview -->
+        <div class="mb-16">
+            <h2 class="text-4xl font-bold text-center mb-12">מפת התהליך</h2>
+            <div class="flex justify-between items-center max-w-6xl mx-auto">
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <div id="overview-1" class="step-counter w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg">1</div>
+                    <span class="text-sm">העלאה</span>
+                </div>
+                <div class="progress-line flex-1 mx-4" id="progress-1"></div>
+                
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <div id="overview-2" class="step-counter w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg">2</div>
+                    <span class="text-sm">אימות</span>
+                </div>
+                <div class="progress-line flex-1 mx-4" id="progress-2"></div>
+                
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <div id="overview-3" class="step-counter w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg">3</div>
+                    <span class="text-sm">עיבוד AI</span>
+                </div>
+                <div class="progress-line flex-1 mx-4" id="progress-3"></div>
+                
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <div id="overview-4" class="step-counter w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg">4</div>
+                    <span class="text-sm">תוצאות</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 1: File Upload -->
+        <div id="step-1" class="flow-step bg-gray-800 rounded-2xl p-8 mb-8 border-2 border-gray-600">
+            <div class="flex items-center justify-between mb-8">
+                <h3 class="text-3xl font-bold text-blue-400">📁 שלב 1: העלאת תלוש שכר</h3>
+                <div class="step-counter w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold">1</div>
+            </div>
+            
+            <div class="grid lg:grid-cols-2 gap-8">
+                <div>
+                    <h4 class="text-xl font-semibold mb-4 text-cyan-300">מה קורה כאן:</h4>
+                    <ul class="space-y-3 text-lg">
+                        <li class="flex items-center space-x-3 space-x-reverse">
+                            <span class="text-green-400">✓</span>
+                            <span>המשתמש בוחר קובץ PDF או תמונה</span>
+                        </li>
+                        <li class="flex items-center space-x-3 space-x-reverse">
+                            <span class="text-green-400">✓</span>
+                            <span>בדיקת גודל וסוג קובץ</span>
+                        </li>
+                        <li class="flex items-center space-x-3 space-x-reverse">
+                            <span class="text-green-400">✓</span>
+                            <span>המרה ל-Base64 לשליחה</span>
+                        </li>
+                        <li class="flex items-center space-x-3 space-x-reverse">
+                            <span class="text-blue-400">→</span>
+                            <span>מעבר לשלב האימות</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="relative">
+                    <div id="file-demo" class="file-upload-animation bg-gradient-to-br from-blue-600 to-purple-600 
+                                               rounded-xl p-8 text-center opacity-0">
+                        <div class="text-6xl mb-4">📄</div>
+                        <div class="text-xl font-bold mb-2">salary.pdf</div>
+                        <div class="text-sm opacity-80">337KB • עברית + ערבית</div>
+                        <div class="mt-4 bg-white/20 rounded-full h-2">
+                            <div class="bg-green-400 h-2 rounded-full" style="width: 0%" id="upload-progress"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: File Validation -->
+        <div id="step-2" class="flow-step bg-gray-800 rounded-2xl p-8 mb-8 border-2 border-gray-600">
+            <div class="flex items-center justify-between mb-8">
+                <h3 class="text-3xl font-bold text-green-400">🔍 שלב 2: אימות ובדיקה</h3>
+                <div class="step-counter w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold">2</div>
+            </div>
+            
+            <div class="grid lg:grid-cols-3 gap-6">
+                <div class="bg-green-900/30 border border-green-400 rounded-xl p-6 text-center">
+                    <div class="text-4xl mb-3">📋</div>
+                    <h4 class="font-bold mb-2">סוג קובץ</h4>
+                    <div id="file-type" class="text-sm opacity-80">בודק...</div>
+                </div>
+                
+                <div class="bg-blue-900/30 border border-blue-400 rounded-xl p-6 text-center">
+                    <div class="text-4xl mb-3">⚖️</div>
+                    <h4 class="font-bold mb-2">גודל קובץ</h4>
+                    <div id="file-size" class="text-sm opacity-80">בודק...</div>
+                </div>
+                
+                <div class="bg-purple-900/30 border border-purple-400 rounded-xl p-6 text-center">
+                    <div class="text-4xl mb-3">🔒</div>
+                    <h4 class="font-bold mb-2">אבטחה</h4>
+                    <div id="security-check" class="text-sm opacity-80">בודק...</div>
+                </div>
+            </div>
+            
+            <div class="mt-8 bg-gray-700 rounded-xl p-6">
+                <h4 class="font-bold mb-4 text-yellow-300">בדיקות מתקדמות:</h4>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div id="check-1" class="flex items-center space-x-3 space-x-reverse opacity-50">
+                        <span class="text-yellow-400">⏳</span>
+                        <span>גודל מקסימלי: PDF 30MB / תמונה 5MB</span>
+                    </div>
+                    <div id="check-2" class="flex items-center space-x-3 space-x-reverse opacity-50">
+                        <span class="text-yellow-400">⏳</span>
+                        <span>פורמטים נתמכים: PDF, JPG, PNG</span>
+                    </div>
+                    <div id="check-3" class="flex items-center space-x-3 space-x-reverse opacity-50">
+                        <span class="text-yellow-400">⏳</span>
+                        <span>בדיקת תוכן (ללא וירוסים)</span>
+                    </div>
+                    <div id="check-4" class="flex items-center space-x-3 space-x-reverse opacity-50">
+                        <span class="text-yellow-400">⏳</span>
+                        <span>אימות שלמות הקובץ</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: AI Processing -->
+        <div id="step-3" class="flow-step bg-gray-800 rounded-2xl p-8 mb-8 border-2 border-gray-600">
+            <div class="flex items-center justify-between mb-8">
+                <h3 class="text-3xl font-bold text-purple-400">🧠 שלב 3: עיבוד Claude AI</h3>
+                <div class="step-counter w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold">3</div>
+            </div>
+            
+            <div class="grid lg:grid-cols-2 gap-8">
+                <div>
+                    <div class="bg-purple-900/30 border border-purple-400 rounded-xl p-6 mb-6">
+                        <div class="flex items-center space-x-4 space-x-reverse mb-4">
+                            <div id="ai-brain" class="ai-thinking text-4xl">🤖</div>
+                            <div>
+                                <h4 class="font-bold text-lg">Claude 3.5 Sonnet</h4>
+                                <div class="text-sm opacity-80">מנתח טקסט עברי ו-OCR מתקדם</div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div id="ai-step-1" class="flex items-center space-x-3 space-x-reverse opacity-50">
+                                <span class="text-yellow-400">⏳</span>
+                                <span>קריאת מבנה התלוש</span>
+                            </div>
+                            <div id="ai-step-2" class="flex items-center space-x-3 space-x-reverse opacity-50">
+                                <span class="text-yellow-400">⏳</span>
+                                <span>זיהוי טקסט עברי וערבי</span>
+                            </div>
+                            <div id="ai-step-3" class="flex items-center space-x-3 space-x-reverse opacity-50">
+                                <span class="text-yellow-400">⏳</span>
+                                <span>חילוץ פרטי עובד</span>
+                            </div>
+                            <div id="ai-step-4" class="flex items-center space-x-3 space-x-reverse opacity-50">
+                                <span class="text-yellow-400">⏳</span>
+                                <span>זיהוי סכומים ותעריפים</span>
+                            </div>
+                            <div id="ai-step-5" class="flex items-center space-x-3 space-x-reverse opacity-50">
+                                <span class="text-yellow-400">⏳</span>
+                                <span>סיווג ל-4 קטגוריות</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="data-flow bg-gray-700 rounded-xl p-4" id="data-transfer">
+                        <div class="text-center">
+                            <div class="text-sm opacity-80 mb-2">העברת נתונים ל-Claude API</div>
+                            <div class="text-xs font-mono bg-black/50 rounded p-2">
+                                Base64: 450,624 תווים → API → JSON תגובה
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold mb-4 text-cyan-300">מה Claude AI מזהה:</h4>
+                    <div class="space-y-4">
+                        <div class="bg-blue-900/30 border border-blue-400 rounded-lg p-4">
+                            <h5 class="font-semibold text-blue-300 mb-2">📊 פרטי עובד</h5>
+                            <div id="employee-info" class="text-sm opacity-80 font-mono typing-effect overflow-hidden whitespace-nowrap">
+                                מזהה שם, ת.ז, מס' עובד, תקופה...
+                            </div>
+                        </div>
+                        
+                        <div class="bg-green-900/30 border border-green-400 rounded-lg p-4">
+                            <h5 class="font-semibold text-green-300 mb-2">💰 רכיבי שכר</h5>
+                            <div id="salary-components" class="text-sm opacity-80">
+                                מפרק כל פריט שכר לקטגוריות...
+                            </div>
+                        </div>
+                        
+                        <div class="bg-yellow-900/30 border border-yellow-400 rounded-lg p-4">
+                            <h5 class="font-semibold text-yellow-300 mb-2">🔢 חישובים</h5>
+                            <div id="calculations" class="text-sm opacity-80">
+                                מחשב סכומים, אחוזים ובדיקות...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Results -->
+        <div id="step-4" class="flow-step bg-gray-800 rounded-2xl p-8 mb-8 border-2 border-gray-600">
+            <div class="flex items-center justify-between mb-8">
+                <h3 class="text-3xl font-bold text-green-400">📊 שלב 4: תוצאות מסווגות</h3>
+                <div class="step-counter w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold">4</div>
+            </div>
+            
+            <div class="grid lg:grid-cols-4 gap-6 mb-8">
+                <div id="category-regular" class="category-box bg-blue-900/30 border-2 border-blue-400 rounded-xl p-6 text-center">
+                    <div class="text-4xl mb-3">🔵</div>
+                    <h4 class="font-bold text-blue-400 mb-2">רגיל</h4>
+                    <div class="text-2xl font-bold mb-2" id="regular-amount">₪0</div>
+                    <div class="text-xs opacity-80">שכר בסיס, ותק, השכלה</div>
+                </div>
+                
+                <div id="category-overtime" class="category-box bg-green-900/30 border-2 border-green-400 rounded-xl p-6 text-center">
+                    <div class="text-4xl mb-3">🟢</div>
+                    <h4 class="font-bold text-green-400 mb-2">שעות נוספות</h4>
+                    <div class="text-2xl font-bold mb-2" id="overtime-amount">₪0</div>
+                    <div class="text-xs opacity-80">125%, 150%, 175%</div>
+                </div>
+                
+                <div id="category-travel" class="category-box bg-yellow-900/30 border-2 border-yellow-400 rounded-xl p-6 text-center">
+                    <div class="text-4xl mb-3">🟡</div>
+                    <h4 class="font-bold text-yellow-400 mb-2">נסיעות</h4>
+                    <div class="text-2xl font-bold mb-2" id="travel-amount">₪0</div>
+                    <div class="text-xs opacity-80">קילומטראז', דלק</div>
+                </div>
+                
+                <div id="category-other" class="category-box bg-purple-900/30 border-2 border-purple-400 rounded-xl p-6 text-center">
+                    <div class="text-4xl mb-3">🟣</div>
+                    <h4 class="font-bold text-purple-400 mb-2">אחר</h4>
+                    <div class="text-2xl font-bold mb-2" id="other-amount">₪0</div>
+                    <div class="text-xs opacity-80">מענקים, פיצויים</div>
+                </div>
+            </div>
+            
+            <div class="result-card bg-gradient-to-r from-green-900/50 to-blue-900/50 border border-cyan-400 rounded-xl p-6">
+                <h4 class="text-xl font-bold text-center mb-4">סיכום כללי</h4>
+                <div class="grid md:grid-cols-3 gap-6 text-center">
+                    <div>
+                        <div class="text-sm opacity-80">סה"כ הכנסות</div>
+                        <div class="text-3xl font-bold text-cyan-400" id="total-income">₪0</div>
+                    </div>
+                    <div>
+                        <div class="text-sm opacity-80">שכר נטו</div>
+                        <div class="text-3xl font-bold text-green-400" id="net-salary">₪0</div>
+                    </div>
+                    <div>
+                        <div class="text-sm opacity-80">דיוק עיבוד</div>
+                        <div class="text-3xl font-bold text-purple-400" id="confidence">0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Final Summary -->
+        <div id="final-summary" class="result-card bg-gradient-to-br from-purple-900 via-blue-900 to-green-900 
+                                       rounded-2xl p-12 text-center border-2 border-cyan-400">
+            <div class="floating-icon text-6xl mb-6">🎉</div>
+            <h3 class="text-4xl font-bold mb-6 text-glow">תהליך הושלם בהצלחה!</h3>
+            <p class="text-xl mb-8 opacity-90">תלוש השכר עובד בהצלחה ומסווג ל-4 קטגוריות מדויקות</p>
+            
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white/10 rounded-lg p-4">
+                    <div class="text-2xl mb-2">⚡</div>
+                    <div class="font-bold">זמן עיבוד</div>
+                    <div class="text-cyan-400">< 10 שניות</div>
+                </div>
+                <div class="bg-white/10 rounded-lg p-4">
+                    <div class="text-2xl mb-2">🎯</div>
+                    <div class="font-bold">דיוק OCR</div>
+                    <div class="text-green-400">95%+</div>
+                </div>
+                <div class="bg-white/10 rounded-lg p-4">
+                    <div class="text-2xl mb-2">🔒</div>
+                    <div class="font-bold">אבטחה</div>
+                    <div class="text-purple-400">מלאה</div>
+                </div>
+            </div>
+            
+            <button onclick="resetDemo()" 
+                    class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 
+                           px-8 py-3 rounded-full font-bold transform hover:scale-105 transition-all">
+                🔄 הפעל הדגמה מחדש
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 0;
+        let demoRunning = false;
+
+        function startDemo() {
+            if (demoRunning) return;
+            
+            demoRunning = true;
+            document.getElementById('startBtn').style.display = 'none';
+            currentStep = 0;
+            
+            // Reset all steps
+            document.querySelectorAll('.flow-step').forEach(step => {
+                step.classList.remove('active', 'completed', 'processing');
+            });
+            
+            runStep1();
+        }
+
+        function runStep1() {
+            currentStep = 1;
+            updateOverview(1);
+            
+            const step1 = document.getElementById('step-1');
+            step1.classList.add('active', 'processing');
+            
+            // Animate file upload
+            setTimeout(() => {
+                const fileDemo = document.getElementById('file-demo');
+                fileDemo.style.opacity = '1';
+                
+                // Progress bar animation
+                let progress = 0;
+                const progressBar = document.getElementById('upload-progress');
+                const interval = setInterval(() => {
+                    progress += 5;
+                    progressBar.style.width = progress + '%';
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        step1.classList.remove('processing');
+                        step1.classList.add('completed');
+                        setTimeout(runStep2, 1000);
+                    }
+                }, 100);
+            }, 1000);
+        }
+
+        function runStep2() {
+            currentStep = 2;
+            updateOverview(2);
+            
+            const step2 = document.getElementById('step-2');
+            step2.classList.add('active', 'processing');
+            
+            // File validation checks
+            const checks = [
+                { id: 'file-type', text: 'PDF ✓', delay: 500 },
+                { id: 'file-size', text: '337KB ✓', delay: 1000 },
+                { id: 'security-check', text: 'בטוח ✓', delay: 1500 },
+                { id: 'check-1', icon: '✅', delay: 2000 },
+                { id: 'check-2', icon: '✅', delay: 2500 },
+                { id: 'check-3', icon: '✅', delay: 3000 },
+                { id: 'check-4', icon: '✅', delay: 3500 }
+            ];
+            
+            checks.forEach(check => {
+                setTimeout(() => {
+                    const element = document.getElementById(check.id);
+                    if (check.text) {
+                        element.textContent = check.text;
+                        element.parentElement.style.color = '#10b981';
+                    }
+                    if (check.icon) {
+                        element.querySelector('span').textContent = check.icon;
+                        element.style.opacity = '1';
+                    }
+                }, check.delay);
+            });
+            
+            setTimeout(() => {
+                step2.classList.remove('processing');
+                step2.classList.add('completed');
+                runStep3();
+            }, 4000);
+        }
+
+        function runStep3() {
+            currentStep = 3;
+            updateOverview(3);
+            
+            const step3 = document.getElementById('step-3');
+            step3.classList.add('active', 'processing');
+            
+            // Activate data transfer animation
+            document.getElementById('data-transfer').classList.add('active');
+            
+            // AI processing steps
+            const aiSteps = [
+                { id: 'ai-step-1', delay: 1000 },
+                { id: 'ai-step-2', delay: 2000 },
+                { id: 'ai-step-3', delay: 3000 },
+                { id: 'ai-step-4', delay: 4000 },
+                { id: 'ai-step-5', delay: 5000 }
+            ];
+            
+            aiSteps.forEach(aiStep => {
+                setTimeout(() => {
+                    const element = document.getElementById(aiStep.id);
+                    element.querySelector('span').textContent = '✅';
+                    element.style.opacity = '1';
+                    element.style.color = '#10b981';
+                }, aiStep.delay);
+            });
+            
+            // Type employee info
+            setTimeout(() => {
+                typeText('employee-info', 'שם: אילוב דוד | ת.ז: 939750964 | תקופה: אפריל 2024');
+            }, 2000);
+            
+            setTimeout(() => {
+                document.getElementById('salary-components').textContent = 'זוהו 8 רכיבי שכר שונים';
+            }, 3500);
+            
+            setTimeout(() => {
+                document.getElementById('calculations').textContent = 'חושב סכומים ואחוזים...';
+            }, 4500);
+            
+            setTimeout(() => {
+                step3.classList.remove('processing');
+                step3.classList.add('completed');
+                runStep4();
+            }, 6000);
+        }
+
+        function runStep4() {
+            currentStep = 4;
+            updateOverview(4);
+            
+            const step4 = document.getElementById('step-4');
+            step4.classList.add('active', 'processing');
+            
+            // Show categories with animation
+            const categories = [
+                { id: 'category-regular', amount: 'regular-amount', value: '8,590', delay: 1000 },
+                { id: 'category-overtime', amount: 'overtime-amount', value: '4,499', delay: 1500 },
+                { id: 'category-travel', amount: 'travel-amount', value: '0', delay: 2000 },
+                { id: 'category-other', amount: 'other-amount', value: '4,194', delay: 2500 }
+            ];
+            
+            categories.forEach(cat => {
+                setTimeout(() => {
+                    document.getElementById(cat.id).classList.add('highlight');
+                    animateNumber(cat.amount, cat.value);
+                }, cat.delay);
+            });
+            
+            // Summary
+            setTimeout(() => {
+                document.querySelector('.result-card').classList.add('show');
+                animateNumber('total-income', '17,283');
+                animateNumber('net-salary', '13,642');
+                animateNumber('confidence', '95');
+            }, 3000);
+            
+            setTimeout(() => {
+                step4.classList.remove('processing');
+                step4.classList.add('completed');
+                showFinalSummary();
+            }, 4000);
+        }
+
+        function showFinalSummary() {
+            setTimeout(() => {
+                document.getElementById('final-summary').classList.add('show');
+                demoRunning = false;
+            }, 1000);
+        }
+
+        function updateOverview(step) {
+            for (let i = 1; i <= 4; i++) {
+                const overview = document.getElementById(`overview-${i}`);
+                const progress = document.getElementById(`progress-${i}`);
+                
+                if (i <= step) {
+                    overview.style.background = 'linear-gradient(45deg, #10b981, #059669)';
+                    if (progress) progress.classList.add('active');
+                } else {
+                    overview.style.background = 'linear-gradient(45deg, #667eea, #764ba2)';
+                    if (progress) progress.classList.remove('active');
+                }
+            }
+        }
+
+        function animateNumber(elementId, targetValue) {
+            const element = document.getElementById(elementId);
+            const target = parseInt(targetValue.replace(',', ''));
+            let current = 0;
+            const increment = target / 30;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                
+                if (elementId === 'confidence') {
+                    element.textContent = Math.round(current) + '%';
+                } else {
+                    element.textContent = '₪' + Math.round(current).toLocaleString();
+                }
+            }, 50);
+        }
+
+        function typeText(elementId, text) {
+            const element = document.getElementById(elementId);
+            element.textContent = '';
+            element.style.width = '0';
+            
+            let i = 0;
+            const timer = setInterval(() => {
+                if (i < text.length) {
+                    element.textContent += text.charAt(i);
+                    i++;
+                } else {
+                    clearInterval(timer);
+                    element.style.borderRight = 'none';
+                }
+            }, 50);
+        }
+
+        function resetDemo() {
+            // Reset all elements
+            document.querySelectorAll('.flow-step').forEach(step => {
+                step.classList.remove('active', 'completed', 'processing');
+            });
+            
+            document.getElementById('final-summary').classList.remove('show');
+            document.getElementById('startBtn').style.display = 'inline-block';
+            
+            // Reset values
+            document.getElementById('file-demo').style.opacity = '0';
+            document.getElementById('upload-progress').style.width = '0%';
+            
+            // Reset all counters and text
+            ['regular-amount', 'overtime-amount', 'travel-amount', 'other-amount', 
+             'total-income', 'net-salary', 'confidence'].forEach(id => {
+                document.getElementById(id).textContent = id === 'confidence' ? '0%' : '₪0';
+            });
+            
+            currentStep = 0;
+            demoRunning = false;
+            
+            // Reset overview
+            updateOverview(0);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            resetDemo();
+        });
+    </script>
+</body>
+</html>
